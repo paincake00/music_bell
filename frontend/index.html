@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>ESP32 Bell</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #f2f2f2;
+            text-align: center;
+            padding-top: 100px;
+        }
+        .box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        img {
+            width: 250px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        button {
+            font-size: 1.5em;
+            padding: 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #218838;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>🔔 ESP32 Bell</h1>
+    <!-- ✅ Правильный путь к картинке -->
+    <img id="bellImage" src="/images/img-1.png" alt="Bell">
+    <br>
+    <button onclick="ring()">Ring</button>
+    <p id="status">Idle</p>
+</div>
+
+<script>
+    function ring() {
+        const img = document.getElementById("bellImage");
+
+        // ✅ Показываем вторую картинку
+        img.src = "/images/img-2.png";
+
+        // ✅ Возвращаем обратно через 5 секунд
+        setTimeout(() => {
+            img.src = "/images/img-1.png";
+        }, 5000);
+
+        // ✅ Отправляем POST-запрос на /api/ring
+        fetch("/api/ring", { method: "POST" })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById("status").innerText =
+                    data.status === "ok" ? "Ding dong 🎵" : "ESP32 error ❌";
+            })
+            .catch(() => {
+                document.getElementById("status").innerText = "ESP32 not reachable.";
+            });
+    }
+</script>
+</body>
+</html>
