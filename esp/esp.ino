@@ -1,174 +1,103 @@
-// #include "SoundData.h"      // Твой массив sample[]
-// #include "driver/dac.h"
-
-// #define BOOT_PIN 0          // Кнопка BOOT на ESP32
-// #define SAMPLE_RATE_HZ 8000
-// #define SAMPLE_DELAY_US (1000000 / SAMPLE_RATE_HZ)
-
-// void setup() {
-//   pinMode(BOOT_PIN, INPUT_PULLUP);        // BOOT подтянут к питанию
-//   dac_output_enable(DAC_CHANNEL_1);       // GPIO25 (DAC1)
-// }
-
-// void loop() {
-//   // Если кнопка нажата (LOW), проигрываем звук
-//   if (digitalRead(BOOT_PIN) == LOW) {
-//     for (size_t i = 0; i < sizeof(sample); i++) {
-//       // Прерываем проигрывание, если кнопку отпустили
-//       if (digitalRead(BOOT_PIN) == HIGH) break;
-
-//       dac_output_voltage(DAC_CHANNEL_1, sample[i]);
-//       delayMicroseconds(SAMPLE_DELAY_US);
-//     }
-//   }
-
-//   delay(10); // Маленькая задержка для стабильности
-// }
-
-
-
-// #include <WiFi.h>
-// #include <WebServer.h>
-
-// #define SPEAKER_PIN 25
-
-// const char* ssid = "Redmi 9";
-// const char* password = "24de4697848d";
-
-// // Массив для мелодии
-// int melody[] = {
-//   523, 466, 440, 349,
-//   392, 392, 294, 466,
-//   440, 440, 523, 466, 440,
-//   392, 392, 466, 440, 466, 440, 466,
-//   392, 392, 466, 440, 466, 440, 466,
-//   392, 392, 294, 261, 233, 440, 440, 440,
-//   523, 466, 440
-// };
-
-// int noteDuration = 180;  // ms
-
-// WebServer server(80);
-
-// void playMelody() {
-//   for (int i=0; i<sizeof(melody)/sizeof(int); i++){
-//     tone(SPEAKER_PIN, melody[i], noteDuration);
-//     delay(noteDuration*1.3);
-//     noTone(SPEAKER_PIN);
-//   }
-//   noTone(SPEAKER_PIN);
-//   pinMode(SPEAKER_PIN, OUTPUT);
-//   digitalWrite(SPEAKER_PIN, LOW);
-// }
-
-// void handleRoot() {
-//   String html = "<html><body>";
-//   html += "<h1>ESP32 Web Server</h1>";
-//   html += "<p>IP-адрес устройства: <b>" + WiFi.localIP().toString() + "</b></p>";
-//   html += "<p>MAC-адрес: " + WiFi.macAddress() + "</p>";
-//   html += "<p>SSID: " + String(ssid) + "</p>";
-//   html += "<p>Уровень сигнала: " + String(WiFi.RSSI()) + " dBm</p>";
-//   html += "<button onclick=\"fetch('/ring', {method: 'POST'}).then(() => alert('Звонок отправлен!'));\">Позвонить</button>";
-//   html += "</body></html>";
-//   server.send(200, "text/html", html);
-// }
-
-// void handleRingPost() {
-//   server.send(200, "text/plain", "Ringing...");
-//   playMelody();
-// }
-
-// void handleIP() {
-//   server.send(200, "text/plain", WiFi.localIP().toString());
-// }
-
-// void printNetworkInfo() {
-//   Serial.println("\n--------- Информация о сети ---------");
-//   Serial.println("IP-адрес: " + WiFi.localIP().toString());
-//   Serial.println("Маска подсети: " + WiFi.subnetMask().toString());
-//   Serial.println("Шлюз: " + WiFi.gatewayIP().toString());
-//   Serial.println("MAC-адрес: " + WiFi.macAddress());
-//   Serial.println("SSID: " + String(ssid));
-//   Serial.println("Уровень сигнала: " + String(WiFi.RSSI()) + " dBm");
-//   Serial.println("------------------------------------\n");
-// }
-
-// void setup() {
-//   Serial.begin(115200);
-//   Serial.println("Запуск ESP32...");
-  
-//   noTone(SPEAKER_PIN);
-//   pinMode(SPEAKER_PIN, OUTPUT);
-//   digitalWrite(SPEAKER_PIN, LOW);
-
-//   Serial.print("Подключение к WiFi");
-//   WiFi.begin(ssid, password);
-//   while (WiFi.status() != WL_CONNECTED) {
-//     delay(500);
-//     Serial.print(".");
-//   }
-  
-//   printNetworkInfo();
-
-//   server.on("/", HTTP_GET, handleRoot);
-//   server.on("/ring", HTTP_POST, handleRingPost);
-//   server.on("/ip", HTTP_GET, handleIP);
-//   server.begin();
-  
-//   Serial.println("Веб-сервер запущен");
-// }
-
-// unsigned long previousMillis = 0;
-// const long interval = 60000;  // 1 минута
-
-// void loop() {
-//   server.handleClient();
-  
-//   // Периодически выводим информацию об IP
-//   unsigned long currentMillis = millis();
-//   if (currentMillis - previousMillis >= interval) {
-//     previousMillis = currentMillis;
-//     printNetworkInfo();
-//   }
-// }
-
-
 #include <WiFi.h>
 #include <WebServer.h>
+#include <ArduinoJson.h>
 
 #define SPEAKER_PIN 25
 
-const char* ssid = "your_ssid";
-const char* password = "your_password";
+const char* ssid = "LAPTOP-5ORAQVBT";
+const char* password = "w3R1644#";
 
-int melody[] = {
+// Определяем несколько мелодий как двумерный массив
+// Мелодия 1 - оригинальная
+// Мелодия 2 - "В лесу родилась ёлочка" (начало)
+// Мелодия 3 - "Имперский марш" (фрагмент)
+const int MELODIES_COUNT = 3;
+
+const int MELODY_1_SIZE = 35;
+const int melody1[MELODY_1_SIZE] = {
   523, 466, 440, 349,
   392, 392, 294, 466,
   440, 440, 523, 466, 440,
   392, 392, 466, 440, 466, 440, 466,
   392, 392, 466, 440, 466, 440, 466,
-  392, 392, 294, 261, 233, 440, 440, 440,
-  523, 466, 440
+  392, 392, 294, 261, 233, 440, 440, 440
 };
 
-int noteDuration = 180;  // ms
+const int MELODY_2_SIZE = 8;
+const int melody2[MELODY_2_SIZE] = {
+  262, 294, 330, 262, 262, 294, 330, 262
+};
+
+const int MELODY_3_SIZE = 9;
+const int melody3[MELODY_3_SIZE] = {
+  392, 392, 392, 311, 466, 392, 311, 466, 392
+};
+
+// Указатели на мелодии
+const int* melodies[MELODIES_COUNT] = {
+  melody1, melody2, melody3
+};
+
+// Размеры мелодий
+const int melodySizes[MELODIES_COUNT] = {
+  MELODY_1_SIZE, MELODY_2_SIZE, MELODY_3_SIZE
+};
+
+// Различные длительности для разных мелодий
+const int noteDurations[MELODIES_COUNT] = {
+  180, 200, 250
+};
+
+// Индекс текущей мелодии
+int currentMelodyIndex = 0;
 
 WebServer server(80);
 
 void playMelody() {
-  for (int i=0; i<sizeof(melody)/sizeof(int); i++){
-    tone(SPEAKER_PIN, melody[i], noteDuration);
-    delay(noteDuration * 1.3);
+  // Получаем текущую мелодию
+  const int* currentMelody = melodies[currentMelodyIndex];
+  int size = melodySizes[currentMelodyIndex];
+  int duration = noteDurations[currentMelodyIndex];
+
+  // Проигрываем выбранную мелодию
+  for (int i = 0; i < size; i++) {
+    tone(SPEAKER_PIN, currentMelody[i], duration);
+    delay(duration * 1.3);
     noTone(SPEAKER_PIN);
   }
+
   noTone(SPEAKER_PIN);
   pinMode(SPEAKER_PIN, OUTPUT);
   digitalWrite(SPEAKER_PIN, LOW);
 }
 
+void handleNextMelody() {
+  // Переключаем на следующую мелодию без воспроизведения
+  currentMelodyIndex = (currentMelodyIndex + 1) % MELODIES_COUNT;
+
+  StaticJsonDocument<64> doc;
+  doc["status"] = "switched";
+  doc["currentMelody"] = currentMelodyIndex + 1;  // номер мелодии начиная с 1
+  String jsonString;
+  serializeJson(doc, jsonString);
+  server.send(200, "application/json", jsonString);
+}
+
 void handleRingPost() {
-  server.send(200, "text/plain", "Ringing...");
-  playMelody();
+  int size = melodySizes[currentMelodyIndex];
+  int duration = noteDurations[currentMelodyIndex];
+  int totalDuration = size * duration * 1.3;
+  
+  StaticJsonDocument<64> doc;
+  doc["status"] = "ok";
+  doc["duration"] = totalDuration;
+  doc["melodyIndex"] = currentMelodyIndex;
+  
+  String jsonString;
+  serializeJson(doc, jsonString);
+  server.send(200, "application/json", jsonString);
+  
+  playMelody(); // Воспроизведение после ответа
 }
 
 void scanNetworks() {
@@ -201,7 +130,9 @@ void setup() {
   }
   Serial.println("\nConnected. IP = " + WiFi.localIP().toString());
 
-  server.on("/ring", HTTP_POST, handleRingPost);  // POST /ring
+  server.on("/ring", HTTP_POST, handleRingPost);
+  server.on("/nextMelody", HTTP_POST, handleNextMelody);
+
   server.begin();
 }
 

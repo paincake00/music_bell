@@ -39,6 +39,16 @@
             font-size: 1.2em;
             color: #555;
         }
+
+        .buttons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .buttons-container button {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -47,32 +57,57 @@
     <!-- ✅ Правильный путь к картинке -->
     <img id="bellImage" src="/images/img-1.png" alt="Bell">
     <br>
-    <button onclick="ring()">Ring</button>
-    <p id="status">Idle</p>
+    <div class="buttons-container">
+        <button onclick="ring()">Позвонить</button>
+        <button onClick="changeMelody()">Сменить мелодию</button>
+    </div>
+    <p id="status"> </p>
 </div>
 
 <script>
     function ring() {
         const img = document.getElementById("bellImage");
+        const status = document.getElementById("status");
 
-        // ✅ Показываем вторую картинку
+        // Показываем вторую картинку
         img.src = "/images/img-2.png";
+        status.innerText = "Звонок...";
 
-        // ✅ Возвращаем обратно через 5 секунд
-        setTimeout(() => {
-            img.src = "/images/img-1.png";
-        }, 5000);
-
-        // ✅ Отправляем POST-запрос на /api/ring
+        // Отправляем запрос и ждем окончания звонка
         fetch("/api/ring", { method: "POST" })
             .then(res => res.json())
             .then(data => {
-                document.getElementById("status").innerText =
-                    data.status === "ok" ? "Ding dong 🎵" : "ESP32 error ❌";
+                if (data.status === "ok") {
+                    // status.innerText = "Звонок завершен!";
+                    // // Возвращаем первую картинку
+                    // img.src = "/images/img-1.png";
+                    setTimeout(() => {
+                        status.innerText = "Звонок завершен!";
+                        img.src = "/images/img-1.png";
+                    }, data.duration);
+                } else {
+                    status.innerText = "Ошибка ❌";
+                    img.src = "/images/img-1.png";
+                }
             })
             .catch(() => {
-                document.getElementById("status").innerText = "ESP32 not reachable.";
+                status.innerText = "ESP32 недоступен";
+                img.src = "/images/img-1.png";
             });
+    }
+    function changeMelody() {
+        fetch('/api/nextMelody', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                alert('Мелодия изменена на ' + data.currentMelody);
+            } else {
+                alert('Ошибка при смене мелодии');
+            }
+        })
+        .catch(error => console.error('Ошибка:', error));
     }
 </script>
 </body>
